@@ -7,6 +7,7 @@ Shader "VertexPainter/SplatBlend_1Layer"
 {
    Properties {
       _Tex1 ("Albedo + Height", 2D) = "white" {}
+      _Tint1 ("Tint", Color) = (1, 1, 1, 1)
       [NoScaleOffset][Normal]_Normal1("Normal", 2D) = "bump" {}
       _Glossiness1 ("Smoothness", Range(0,1)) = 0.5
       [NoScaleOffset]_GlossinessTex1("Metallic(R)/Smoothness(A)", 2D) = "black" {}
@@ -19,7 +20,10 @@ Shader "VertexPainter/SplatBlend_1Layer"
       
       _FlowSpeed ("Flow Speed", Float) = 0
       _FlowIntensity ("Flow Intensity", Float) = 1
-      
+
+      _DistBlendMin("Distance Blend Begin", Float) = 0
+      _DistBlendMax("Distance Blend Max", Float) = 100
+      _DistUVScale1("Distance UV Scale", Float) = 0.5
    }
    SubShader {
       Tags { "RenderType"="Opaque" }
@@ -38,6 +42,7 @@ Shader "VertexPainter/SplatBlend_1Layer"
       // flow map keywords. 
       #pragma shader_feature __ _FLOW1
       #pragma shader_feature __ _FLOWDRIFT 
+      #pragma shader_feature __ _DISTBLEND
 
       #include "SplatBlend_Shared.cginc"
       
@@ -48,10 +53,14 @@ Shader "VertexPainter/SplatBlend_1Layer"
       
       void surf (Input IN, inout SurfaceOutputStandard o) 
       {
+         COMPUTEDISTBLEND
+
          float2 uv1 = IN.uv_Tex1 * _TexScale1;
          INIT_FLOW
          #if (_FLOWDRIFT || !_PARALLAXMAP)
          fixed4 c1 = FETCH_TEX1(_Tex1, uv1);
+         #elif _DISTBLEND
+         fixed4 c1 = lerp(tex2D(_Tex1, uv1), tex2D(_Tex1, uv1*_DistUVScale1), dist);
          #else
          fixed4 c1 = tex2D(_Tex1, uv1);
          #endif
@@ -66,6 +75,8 @@ Shader "VertexPainter/SplatBlend_1Layer"
          #endif
          c1 = FETCH_TEX1(_Tex1, uv1);
          #endif
+
+         c1 *= _Tint1;
 
          #if _METALLICGLOSSMAP
          fixed4 g1 = FETCH_TEX1(_GlossinessTex1, uv1);

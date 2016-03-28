@@ -7,6 +7,7 @@ Shader "VertexPainter/SplatBlend_5Layer"
 {
    Properties {
       _Tex1 ("Albedo + Height", 2D) = "white" {}
+      _Tint1 ("Tint", Color) = (1, 1, 1, 1)
       [NoScaleOffset][Normal]_Normal1("Normal", 2D) = "bump" {}
       _Glossiness1 ("Smoothness", Range(0,1)) = 0.5
       [NoScaleOffset]_GlossinessTex1("Metallic(R)/Smoothness(A)", 2D) = "black" {}
@@ -16,8 +17,8 @@ Shader "VertexPainter/SplatBlend_5Layer"
       _Parallax1 ("Parallax Height", Range (0.005, 0.08)) = 0.02
       _TexScale1 ("Texture Scale", Float) = 1
       
-      
       _Tex2("Albedo + Height", 2D) = "white" {}
+      _Tint2 ("Tint", Color) = (1, 1, 1, 1)
       [NoScaleOffset][Normal]_Normal2("Normal", 2D) = "bump" {}
       _Glossiness2 ("Smoothness", Range(0,1)) = 0.5
       [NoScaleOffset]_GlossinessTex2("Metallic(R)/Smoothness(A)", 2D) = "black" {}
@@ -29,6 +30,7 @@ Shader "VertexPainter/SplatBlend_5Layer"
       _Contrast2("Contrast", Range(0,0.99)) = 0.5
       
       _Tex3("Albedo + Height", 2D) = "white" {}
+      _Tint3 ("Tint", Color) = (1, 1, 1, 1)
       [NoScaleOffset][Normal]_Normal3("Normal", 2D) = "bump" {}
       _Glossiness3 ("Smoothness", Range(0,1)) = 0.5
       [NoScaleOffset]_GlossinessTex3("Metallic(R)/Smoothness(A)", 2D) = "black" {}
@@ -40,6 +42,7 @@ Shader "VertexPainter/SplatBlend_5Layer"
       _Contrast3("Contrast", Range(0,0.99)) = 0.5
       
       _Tex4("Albedo + Height", 2D) = "white" {}
+      _Tint4 ("Tint", Color) = (1, 1, 1, 1)
       [NoScaleOffset][Normal]_Normal4("Normal", 2D) = "bump" {}
       _Glossiness4 ("Smoothness", Range(0,1)) = 0.5
       [NoScaleOffset]_GlossinessTex4("Metallic(R)/Smoothness(A)", 2D) = "black" {}
@@ -48,9 +51,10 @@ Shader "VertexPainter/SplatBlend_5Layer"
       _EmissiveMult4("Emissive Multiplier", Float) = 1
       _Parallax4 ("Parallax Height", Range (0.005, 0.08)) = 0.02 
       _TexScale4 ("Texture Scale", Float) = 1
-      _Contrast4("Contrast", Range(0,0.99)) = 0.5
-      
+      _Contrast4("Contrast", Range(0,0.99)) = 0.5 
+
       _Tex5("Albedo + Height", 2D) = "white" {}
+      _Tint5 ("Tint", Color) = (1, 1, 1, 1)
       [NoScaleOffset][Normal]_Normal5("Normal", 2D) = "bump" {}
       _Glossiness5 ("Smoothness", Range(0,1)) = 0.5
       [NoScaleOffset]_GlossinessTex5("Metallic(R)/Smoothness(A)", 2D) = "black" {}
@@ -60,11 +64,20 @@ Shader "VertexPainter/SplatBlend_5Layer"
       _Parallax5 ("Parallax Height", Range (0.005, 0.08)) = 0.02 
       _TexScale5 ("Texture Scale", Float) = 1
       _Contrast5("Contrast", Range(0,0.99)) = 0.5
-      
+
       
       _FlowSpeed ("Flow Speed", Float) = 0
       _FlowIntensity ("Flow Intensity", Float) = 1
-      
+      _FlowAlpha ("Flow Alpha", Range(0, 1)) = 1
+      _FlowRefraction("Flow Refraction", Range(0, 0.3)) = 0.04
+
+      _DistBlendMin("Distance Blend Begin", Float) = 0
+      _DistBlendMax("Distance Blend Max", Float) = 100
+      _DistUVScale1("Distance UV Scale", Float) = 0.5
+      _DistUVScale2("Distance UV Scale", Float) = 0.5
+      _DistUVScale3("Distance UV Scale", Float) = 0.5
+      _DistUVScale4("Distance UV Scale", Float) = 0.5
+      _DistUVScale5("Distance UV Scale", Float) = 0.5
    }
    SubShader {
       Tags { "RenderType"="Opaque" }
@@ -83,7 +96,8 @@ Shader "VertexPainter/SplatBlend_5Layer"
       // flow map keywords. 
       #pragma shader_feature __ _FLOW1 _FLOW2 _FLOW3 _FLOW4 _FLOW5
       #pragma shader_feature __ _FLOWDRIFT 
-
+      #pragma shader_feature __ _FLOWREFRACTION
+      #pragma shader_feature __ _DISTBLEND
       #include "SplatBlend_Shared.cginc"
       
       void vert (inout appdata_full v, out Input o) 
@@ -93,7 +107,7 @@ Shader "VertexPainter/SplatBlend_5Layer"
       
       void surf (Input IN, inout SurfaceOutputStandard o) 
       {
-         
+         COMPUTEDISTBLEND
          //////////////////
          // Five Layer
          //////////////////
@@ -109,6 +123,12 @@ Shader "VertexPainter/SplatBlend_5Layer"
          fixed4 c3 = FETCH_TEX3(_Tex3, uv3);
          fixed4 c4 = FETCH_TEX4(_Tex4, uv4);
          fixed4 c5 = FETCH_TEX5(_Tex5, uv5);
+         #elif _DISTBLEND
+         fixed4 c1 = lerp(tex2D(_Tex1, uv1), tex2D(_Tex1, uv1*_DistUVScale1), dist);
+         fixed4 c2 = lerp(tex2D(_Tex2, uv2), tex2D(_Tex2, uv2*_DistUVScale2), dist);
+         fixed4 c3 = lerp(tex2D(_Tex3, uv3), tex2D(_Tex3, uv3*_DistUVScale3), dist);
+         fixed4 c4 = lerp(tex2D(_Tex4, uv4), tex2D(_Tex4, uv4*_DistUVScale4), dist);
+         fixed4 c5 = lerp(tex2D(_Tex5, uv5), tex2D(_Tex5, uv5*_DistUVScale5), dist);
          #else
          fixed4 c1 = tex2D(_Tex1, uv1);
          fixed4 c2 = tex2D(_Tex2, uv2);
@@ -123,6 +143,63 @@ Shader "VertexPainter/SplatBlend_5Layer"
          half b3 = HeightBlend(h2, c4.a, IN.color.b, _Contrast4);
          fixed h3 = lerp(h2, c3.a, b1);
          half b4 = HeightBlend(h3, c5.a, IN.color.a, _Contrast5);
+
+         // flow alpha and refraction
+         #if _FLOW2
+            b1 *= _FlowAlpha;
+            #if _FLOWREFRACTION && _NORMALMAP
+               half4 rn = FETCH_TEX2 (_Normal2, uv2) - 0.5;
+               uv1 += rn.xy * b1 * _FlowRefraction;
+               #if !_PARALLAXMAP 
+                  c1 = FETCH_TEX1(_Tex1, uv1);
+               #endif
+            #endif
+         #endif
+         #if _FLOW3
+            b2 *= _FlowAlpha;
+            #if _FLOWREFRACTION && _NORMALMAP
+               half4 rn = FETCH_TEX3 (_Normal3, uv3) - 0.5;
+               uv1 += rn.xy * b1 * _FlowRefraction;
+               uv2 += rn.xy * b2 * _FlowRefraction;
+               #if !_PARALLAXMAP 
+                  c1 = FETCH_TEX1(_Tex1, uv1);
+                  c2 = FETCH_TEX2(_Tex2, uv2);
+               #endif
+            #endif
+         #endif
+         #if _FLOW4
+            b3 *= _FlowAlpha;
+            #if _FLOWREFRACTION && _NORMALMAP
+               half4 rn = FETCH_TEX4 (_Normal4, uv4) - 0.5;
+               uv1 += rn.xy * b1 * _FlowRefraction;
+               uv2 += rn.xy * b2 * _FlowRefraction;
+               uv3 += rn.xy * b3 * _FlowRefraction;
+               #if !_PARALLAXMAP 
+                  c1 = FETCH_TEX1(_Tex1, uv1);
+                  c2 = FETCH_TEX2(_Tex2, uv2);
+                  c3 = FETCH_TEX3(_Tex3, uv3);
+               #endif
+            #endif
+         #endif
+         #if _FLOW5
+            b4 *= _FlowAlpha;
+            #if _FLOWREFRACTION && _NORMALMAP
+               half4 rn = FETCH_TEX5 (_Normal5, uv5) - 0.5;
+               uv1 += rn.xy * b1 * _FlowRefraction;
+               uv2 += rn.xy * b2 * _FlowRefraction;
+               uv3 += rn.xy * b3 * _FlowRefraction;
+               uv4 += rn.xy * b4 * _FlowRefraction;
+               #if !_PARALLAXMAP 
+                  c1 = FETCH_TEX1(_Tex1, uv1);
+                  c2 = FETCH_TEX2(_Tex2, uv2);
+                  c3 = FETCH_TEX3(_Tex3, uv3);
+                  c4 = FETCH_TEX4(_Tex4, uv4);
+               #endif
+            #endif
+         #endif
+
+
+
          #if _PARALLAXMAP 
          float parallax = lerp(lerp(lerp(lerp(_Parallax1, _Parallax2, b1), _Parallax3, b2), _Parallax4, b3), _Parallax5, b4);
          float2 offset = ParallaxOffset (lerp(lerp(lerp(lerp(c1.a, c2.a, b1),c3.a, b2), c4.a, b3), c5.a, b4), parallax, IN.viewDir);
@@ -142,7 +219,7 @@ Shader "VertexPainter/SplatBlend_5Layer"
          #endif
          #endif
          
-         fixed4 c = lerp(lerp(lerp(lerp(c1, c2, b1), c3, b2), c4, b3), c5, b4);
+         fixed4 c = lerp(lerp(lerp(lerp(c1 * _Tint1, c2 * _Tint2, b1), c3 * _Tint3, b2), c4 * _Tint4, b3), c5 * _Tint5, b4);
          
          #if _NORMALMAP
          half4 n1 =  (FETCH_TEX1 (_Normal1, uv1));

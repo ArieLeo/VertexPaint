@@ -7,10 +7,12 @@ using System.Linq;
 public class SplatMapShaderGUI : ShaderGUI 
 {
 
-   void DrawLayer(MaterialEditor editor, int i, MaterialProperty[] props, string[] keyWords, Workflow workflow, bool hasGloss, bool hasSpec, bool isParallax, bool hasEmis)
+   void DrawLayer(MaterialEditor editor, int i, MaterialProperty[] props, string[] keyWords, Workflow workflow, 
+      bool hasGloss, bool hasSpec, bool isParallax, bool hasEmis, bool hasDistBlend)
    {
       EditorGUIUtility.labelWidth = 0f;
       var albedoMap = FindProperty ("_Tex" + i, props);
+      var tint = FindProperty("_Tint" + i, props);
       var normalMap = FindProperty ("_Normal" + i, props);
       var smoothness = FindProperty("_Glossiness" + i, props);
       var glossinessMap = FindProperty("_GlossinessTex" + i, props, false);
@@ -21,8 +23,10 @@ public class SplatMapShaderGUI : ShaderGUI
       var texScale = FindProperty("_TexScale" + i, props);
       var specMap = FindProperty("_SpecGlossMap" + i, props, false);
       var specColor = FindProperty("_SpecColor" + i, props, false);
+      var distUVScale = FindProperty("_DistUVScale" + i, props, false);
 
       editor.TexturePropertySingleLine(new GUIContent("Albedo/Height"), albedoMap);
+      editor.ShaderProperty(tint, "Tint");
       editor.TexturePropertySingleLine(new GUIContent("Normal"), normalMap);
       if (workflow == Workflow.Metallic)
       {
@@ -46,7 +50,10 @@ public class SplatMapShaderGUI : ShaderGUI
       editor.ShaderProperty(emissionMult, "Emissive Multiplier");
 
       editor.ShaderProperty(texScale, "Texture Scale");
-
+      if (hasDistBlend)
+      {
+         editor.ShaderProperty(distUVScale, "Distance UV Scale");
+      }
       if (isParallax)
       {
          editor.ShaderProperty(parallax, "Parallax Height");
@@ -146,11 +153,12 @@ public class SplatMapShaderGUI : ShaderGUI
          fchannel = FlowChannel.Five;
 
       bool flowDrift = keyWords.Contains("_FLOWDRIFT");
+      bool flowRefraction = keyWords.Contains("_FLOWREFRACTION");
       bool parallax = keyWords.Contains ("_PARALLAXMAP");
       bool hasGloss = (HasTexture(layerCount, targetMat, "_GlossinessTex"));
       bool hasSpec = (HasTexture(layerCount, targetMat, "_SpecGlossMap"));
       bool hasEmis = (HasTexture(layerCount, targetMat, "_Emissive"));
-
+      bool hasDistBlend = keyWords.Contains("_DISTBLEND");
 
       EditorGUI.BeginChangeCheck();
       Workflow oldWorkflow = workflow;
@@ -178,10 +186,31 @@ public class SplatMapShaderGUI : ShaderGUI
 
 
       parallax = EditorGUILayout.Toggle ("Parallax Offset", parallax);
+      hasDistBlend = EditorGUILayout.Toggle("UV Scale in distance", hasDistBlend);
+      var distBlendMin = FindProperty("_DistBlendMin", props);
+      var distBlendMax = FindProperty("_DistBlendMax", props); 
+
+      if (hasDistBlend)
+      {
+         materialEditor.ShaderProperty(distBlendMin, "Distance Blend Min");
+         materialEditor.ShaderProperty(distBlendMax, "Distance Blend Max");
+
+         // make sure max is at least min
+         if (distBlendMin.floatValue > distBlendMax.floatValue)
+         {
+            distBlendMax.floatValue = distBlendMin.floatValue;
+         }
+         // make sure max is at least 1
+         if (distBlendMax.floatValue <= 1)
+         {
+            distBlendMax.floatValue = 1;
+         }
+      }
+
 
       for (int i = 0; i < layerCount; ++i)
       {
-         DrawLayer(materialEditor, i+1, props, keyWords, workflow, hasGloss, hasSpec, parallax, hasEmis);
+         DrawLayer(materialEditor, i+1, props, keyWords, workflow, hasGloss, hasSpec, parallax, hasEmis, hasDistBlend);
 
          EditorGUILayout.Space();
       }
@@ -194,9 +223,20 @@ public class SplatMapShaderGUI : ShaderGUI
 
          var flowSpeed = FindProperty("_FlowSpeed", props);
          var flowIntensity = FindProperty("_FlowIntensity", props);
+         var flowAlpha = FindProperty("_FlowAlpha", props);
+         var flowRefract = FindProperty("_FlowRefraction", props);
 
          materialEditor.ShaderProperty(flowSpeed, "Flow Speed");
          materialEditor.ShaderProperty(flowIntensity, "Flow Intensity");
+         materialEditor.ShaderProperty(flowAlpha, "Flow Alpha");
+         if (layerCount > 1)
+         {
+            flowRefraction = EditorGUILayout.Toggle("Flow Refraction", flowRefraction);
+            if (flowRefraction)
+            {
+               materialEditor.ShaderProperty(flowRefract, "Refraction Amount");
+            }
+         }
          flowDrift = EditorGUILayout.Toggle("Flow Drift", flowDrift);
       }
 
@@ -205,6 +245,10 @@ public class SplatMapShaderGUI : ShaderGUI
          var newKeywords = new List<string>();
 
          newKeywords.Add("_LAYERS" + layerCount.ToString());
+         if (hasDistBlend)
+         {
+            newKeywords.Add("_DISTBLEND");
+         }
          if (parallax) 
          {
             newKeywords.Add("_PARALLAXMAP");
@@ -233,6 +277,10 @@ public class SplatMapShaderGUI : ShaderGUI
          if (flowDrift)
          {
             newKeywords.Add("_FLOWDRIFT");
+         }
+         if (flowRefraction && layerCount > 1)
+         {
+            newKeywords.Add("_FLOWREFRACTION");
          }
          targetMat.shaderKeywords = newKeywords.ToArray ();
          EditorUtility.SetDirty (targetMat);
