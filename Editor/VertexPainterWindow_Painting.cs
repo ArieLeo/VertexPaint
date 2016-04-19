@@ -17,7 +17,7 @@ namespace JBooth.VertexPainterPro
 
       // whats worse- this could also be condensed down to a macro, which would actually be MORE
       // safe in terms of potential bugs than all this; and it would be like a dozen lines to boot.
-      delegate void Setter(int idx,ref object x);
+      delegate void Setter(int idx, ref object x);
 
       Setter GetSetter(VertexInstanceStream s)
       {
@@ -254,6 +254,247 @@ namespace JBooth.VertexPainterPro
                   s.uv3[idx] = vec;
                }; 
                
+         }
+         return null;
+      }
+
+      delegate void Multiplier(int idx, ref object x);
+
+      Multiplier GetMultiplier(VertexInstanceStream s)
+      {
+         if (tab == Tab.Flow)
+         {
+            switch (flowTarget)
+            {
+               case FlowTarget.ColorRG:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector2 vv = (Vector2)v;
+                     s.colors[idx].r *= vv.x;
+                     s.colors[idx].g *= vv.y;
+                  }; 
+               case FlowTarget.ColorBA:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector2 vv = (Vector2)v;
+                     s.colors[idx].b *= vv.x;
+                     s.colors[idx].a *= vv.y;
+                  }; 
+               case FlowTarget.UV0_XY:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv0[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.x *= iv.x;
+                     vec.y *= iv.y;
+                     s.uv0[idx] = vec;
+                  }; 
+               case FlowTarget.UV0_ZW:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv0[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.z *= iv.x;
+                     vec.w *= iv.y;
+                     s.uv0[idx] = vec;
+                  }; 
+               case FlowTarget.UV1_XY:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv1[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.x *= iv.x;
+                     vec.y *= iv.y;
+                     s.uv1[idx] = vec;
+                  }; 
+               case FlowTarget.UV1_ZW:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv1[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.z *= iv.x;
+                     vec.w *= iv.y;
+                     s.uv1[idx] = vec;
+                  }; 
+               case FlowTarget.UV2_XY:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv2[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.x *= iv.x;
+                     vec.y *= iv.y;
+                     s.uv2[idx] = vec;
+                  }; 
+               case FlowTarget.UV2_ZW:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv2[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.z *= iv.x;
+                     vec.w *= iv.y;
+                     s.uv2[idx] = vec;
+                  }; 
+               case FlowTarget.UV3_XY:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv3[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.x *= iv.x;
+                     vec.y *= iv.y;
+                     s.uv3[idx] = vec;
+                  }; 
+               case FlowTarget.UV3_ZW:
+                  return delegate(int idx, ref object v)
+                  {
+                     Vector4 vec = s.uv3[idx];
+                     Vector2 iv = (Vector2)v;
+                     vec.z *= iv.x;
+                     vec.w *= iv.y;
+                     s.uv3[idx] = vec;
+                  }; 
+            }
+            return null;
+         }
+         switch (brushMode)
+         {
+            case BrushTarget.Color:
+               return delegate(int idx, ref object v)
+               {
+                  s.colors[idx] *= (Color)v;
+               };     
+            case BrushTarget.ValueR:
+               return delegate(int idx, ref object v)
+               {
+                  s.colors[idx].r *= (float)v;
+               };
+            case BrushTarget.ValueG:
+               return delegate(int idx, ref object v)
+               {
+                  s.colors[idx].g *= (float)v;
+               };
+            case BrushTarget.ValueB:
+               return delegate(int idx, ref object v)
+               {
+                  s.colors[idx].b *= (float)v;
+               };
+            case BrushTarget.ValueA:
+               return delegate(int idx, ref object v)
+               {
+                  s.colors[idx].a *= (float)v;
+               }; 
+            case BrushTarget.UV0_X:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv0[idx];
+                  vec.x *= (float)v;
+                  s.uv0[idx] = vec;
+               }; 
+            case BrushTarget.UV0_Y:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv0[idx];
+                  vec.y *= (float)v;
+                  s.uv0[idx] = vec;
+               }; 
+            case BrushTarget.UV0_Z:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv0[idx];
+                  vec.z *= (float)v;
+                  s.uv0[idx] = vec;
+               }; 
+            case BrushTarget.UV0_W:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv0[idx];
+                  vec.w *= (float)v;
+                  s.uv0[idx] = vec;
+               }; 
+            case BrushTarget.UV1_X:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv1[idx];
+                  vec.x *= (float)v;
+                  s.uv1[idx] = vec;
+               }; 
+            case BrushTarget.UV1_Y:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv1[idx];
+                  vec.y *= (float)v;
+                  s.uv1[idx] = vec;
+               }; 
+            case BrushTarget.UV1_Z:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv1[idx];
+                  vec.z *= (float)v;
+                  s.uv1[idx] = vec;
+               }; 
+            case BrushTarget.UV1_W:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv1[idx];
+                  vec.w *= (float)v;
+                  s.uv1[idx] = vec;
+               }; 
+            case BrushTarget.UV2_X:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv2[idx];
+                  vec.x *= (float)v;
+                  s.uv2[idx] = vec;
+               }; 
+            case BrushTarget.UV2_Y:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv2[idx];
+                  vec.y *= (float)v;
+                  s.uv2[idx] = vec;
+               }; 
+            case BrushTarget.UV2_Z:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv2[idx];
+                  vec.z *= (float)v;
+                  s.uv2[idx] = vec;
+               }; 
+            case BrushTarget.UV2_W:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv2[idx];
+                  vec.w *= (float)v;
+                  s.uv2[idx] = vec;
+               }; 
+            case BrushTarget.UV3_X:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv3[idx];
+                  vec.x *= (float)v;
+                  s.uv3[idx] = vec;
+               }; 
+            case BrushTarget.UV3_Y:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv3[idx];
+                  vec.y *= (float)v;
+                  s.uv3[idx] = vec;
+               };
+            case BrushTarget.UV3_Z:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv3[idx];
+                  vec.z *= (float)v;
+                  s.uv3[idx] = vec;
+               }; 
+            case BrushTarget.UV3_W:
+               return delegate(int idx, ref object v)
+               {
+                  Vector4 vec = s.uv3[idx];
+                  vec.w *= (float)v;
+                  s.uv3[idx] = vec;
+               }; 
+
          }
          return null;
       }
@@ -594,6 +835,7 @@ namespace JBooth.VertexPainterPro
       }
 
       public bool            enabled;
+      public Vector3         oldpos = Vector3.zero;
       public float           brushSize = 1;
       public float           brushFlow = 8;
       public float           brushFalloff = 1; // linear
@@ -751,6 +993,7 @@ namespace JBooth.VertexPainterPro
                   jobs[i].renderer.sharedMaterial = jobs[i].stream.originalMaterial[0];
                }
             }
+            EditorUtility.SetSelectedWireframeHidden(jobs[i].renderer, true);
          }
       }
 
@@ -791,9 +1034,11 @@ namespace JBooth.VertexPainterPro
          }
          for (int i = 0; i < jobs.Length; ++i)
          {
+            var job = jobs[i];
+            EditorUtility.SetSelectedWireframeHidden(job.renderer, hideMeshWireframe);
+
             if (!showVertexShader)
             {
-               var job = jobs[i];
                if (job.renderer)
                {
                   if (job.renderer.sharedMaterials != null && job.renderer.sharedMaterials.Length > 1 &&
@@ -815,7 +1060,6 @@ namespace JBooth.VertexPainterPro
             }
             else
             {
-               var job = jobs[i];
                if (job.renderer != null)
                {
                   if (job.renderer.sharedMaterials != null && job.renderer.sharedMaterials.Length > 1)
@@ -1492,11 +1736,26 @@ namespace JBooth.VertexPainterPro
 
             if (RXLookingGlass.IntersectRayMesh(ray, msh, mtx, out hit))
             {
-               if (hit.distance < distance)
+               if (Event.current.shift == false) 
                {
-                  distance = hit.distance;
-                  point = hit.point;
-                  normal = hit.normal;
+                  if (hit.distance < distance) 
+                  {
+                     distance = hit.distance;
+                     point = hit.point;
+                     oldpos = hit.point;
+                     normal = hit.normal;
+                  }
+               } 
+               else 
+               {
+                  point = oldpos;
+               }
+            } 
+            else 
+            {
+               if (Event.current.shift == true) 
+               {
+                  point = oldpos;
                }
             }  
          }
@@ -1526,6 +1785,31 @@ namespace JBooth.VertexPainterPro
             }
 
          }
+            
+         if (Event.current.type == EventType.KeyUp && Event.current.control)
+         {
+            if (Event.current.keyCode == KeyCode.W)
+            {
+               hideMeshWireframe = !hideMeshWireframe;
+               for (int i = 0; i < jobs.Length; ++i)
+               {
+                  EditorUtility.SetSelectedWireframeHidden(jobs[i].renderer, hideMeshWireframe);
+               }
+            }
+            if (Event.current.keyCode == KeyCode.V)
+            {
+               showVertexShader = !showVertexShader;
+               UpdateDisplayMode();
+            }
+         }
+
+
+
+         if (Event.current.type == EventType.MouseMove && Event.current.shift) {
+            brushSize += Event.current.delta.x * (float)deltaTime * (float)6;
+            brushFalloff -= Event.current.delta.y * (float)deltaTime * (float)48;
+         }
+         /*Player7 End*/
 
          if (Event.current.rawType == EventType.MouseUp)
          {
