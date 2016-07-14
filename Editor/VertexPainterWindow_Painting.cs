@@ -852,8 +852,15 @@ namespace JBooth.VertexPainterPro
       public bool            pull = false;
       public VertexContraint vertexContraint = VertexContraint.Normal;
       public bool            showVertexShader = false;
-      public PaintJob[]      jobs = new PaintJob[0];
+      public bool            showVertexPoints = false;
 
+      public enum BrushVisualization
+      {
+         Sphere,
+         Disk
+      }
+      public BrushVisualization brushVisualization = BrushVisualization.Sphere;
+      public PaintJob[]      jobs = new PaintJob[0];
 
 
       public class PaintJob
@@ -1332,6 +1339,33 @@ namespace JBooth.VertexPainterPro
 
       }
 
+
+      void DrawVertexPoints(PaintJob j, Vector3 point)
+      {
+         Profiler.BeginSample("Draw Vertex Points");
+         PrepBrushMode(j);
+         // convert point into local space, so we don't have to convert every point
+         point = j.renderer.transform.worldToLocalMatrix.MultiplyPoint3x4(point);
+         // for some reason this doesn't handle scale, seems like it should
+         // we handle it poorly until I can find a better solution
+         float scale = 1.0f / Mathf.Abs(j.renderer.transform.lossyScale.x);
+
+         float bz = scale * brushSize;
+
+         for (int i = 0; i < j.verts.Length; ++i)
+         {
+            float d = Vector3.Distance(point, j.verts[i]);
+            if (d < bz)
+            {
+               Handles.color = Color.white;
+               Vector3 wp = j.meshFilter.transform.localToWorldMatrix.MultiplyPoint(j.verts[i]);
+               Handles.SphereCap(0, wp, Quaternion.identity, HandleUtility.GetHandleSize(wp) * 0.02f);
+            }
+         }
+         Profiler.EndSample();
+      }
+
+
       void PaintMesh(PaintJob j, Vector3 point)
       {
          Profiler.BeginSample("Paint Mesh");
@@ -1340,7 +1374,7 @@ namespace JBooth.VertexPainterPro
          point = j.renderer.transform.worldToLocalMatrix.MultiplyPoint3x4(point);
          // for some reason this doesn't handle scale, seems like it should
          // we handle it poorly until I can find a better solution
-         float scale = 1.0f / j.renderer.transform.lossyScale.x;
+         float scale = 1.0f / Mathf.Abs(j.renderer.transform.lossyScale.x);
 
          float bz = scale * brushSize;
          var lerper = GetLerper(j.stream);
@@ -1369,7 +1403,15 @@ namespace JBooth.VertexPainterPro
                   {
                      t = j.stream.tangents[i];
                   }
-                  
+
+                  var mtx = j.meshFilter.transform.localToWorldMatrix;
+                  n = mtx.MultiplyVector(n);
+                  Vector3 tg = new Vector3(t.x, t.y, t.z);
+                  tg = mtx.MultiplyVector(tg);
+                  t.x = tg.x;
+                  t.y = tg.y;
+                  t.z = tg.z;
+
                   target.x = 0.5f;
                   target.y = 0.5f;
                   if (flowBrushType == FlowBrushType.Direction)
@@ -1383,17 +1425,6 @@ namespace JBooth.VertexPainterPro
                      target = new Vector2(dx, dy);
                      target.Normalize();
 
-                     /* using matrix; more code for same result. 
-                     Matrix4x4 tbn = new Matrix4x4();
-                     tbn.SetRow(0, t);
-                     tbn.SetRow(1, new Vector4(b.x, b.y, b.z, 0));
-                     tbn.SetRow(2, new Vector4(n.x, n.y, n.z, 0));
-                     tbn.SetRow(3, new Vector4(0,0,0,1));
-
-                     Vector3 res = tbn.MultiplyVector(sd);
-                     target.x = res.x;
-                     target.y = res.y;
-                     */
                      if (flowTarget == FlowTarget.ColorBA || flowTarget == FlowTarget.ColorRG || flowRemap01)
                      {
                         target.x = target.x * 0.5f + 0.5f;
@@ -1446,7 +1477,6 @@ namespace JBooth.VertexPainterPro
             }
             Profiler.EndSample();
          }
-         
 
          j.stream.Apply();
          Profiler.EndSample();
@@ -1744,6 +1774,14 @@ namespace JBooth.VertexPainterPro
                      point = hit.point;
                      oldpos = hit.point;
                      normal = hit.normal;
+                     // if we don't have normal overrides, we have to recast against the shared mesh to get it's normal
+                     // This could get a little strange if you modify the mesh, then delete the normal data, but in that
+                     // case there's no real correct answer anyway without knowing the index of the vertex we're hitting.
+                     if (normal.magnitude < 0.1f)
+                     {
+                        RXLookingGlass.IntersectRayMesh(ray, jobs[i].meshFilter.sharedMesh, mtx, out hit);
+                        normal = hit.normal;
+                     }
                   }
                } 
                else 
@@ -1809,7 +1847,6 @@ namespace JBooth.VertexPainterPro
             brushSize += Event.current.delta.x * (float)deltaTime * (float)6;
             brushFalloff -= Event.current.delta.y * (float)deltaTime * (float)48;
          }
-         /*Player7 End*/
 
          if (Event.current.rawType == EventType.MouseUp)
          {
@@ -1825,8 +1862,8 @@ namespace JBooth.VertexPainterPro
          {
             Handles.color = new Color(brushColor.r, brushColor.g, brushColor.b, 0.4f);
          }
-         else if (brushMode == BrushTarget.ValueR || brushMode == BrushTarget.ValueG || 
-            brushMode == BrushTarget.ValueB || brushMode == BrushTarget.ValueA)
+         else if (brushMode == BrushTarget.ValueR || brushMode == BrushTarget.ValueG ||
+                  brushMode == BrushTarget.ValueB || brushMode == BrushTarget.ValueA)
          {
             float v = (float)brushValue / 255.0f;
             Handles.color = new Color(v, v, v, 0.4f);
@@ -1837,7 +1874,7 @@ namespace JBooth.VertexPainterPro
             Handles.color = new Color(v, v, v, 0.4f);
          }
 
-         if (tab != Tab.Deform)
+         if (brushVisualization == BrushVisualization.Sphere)
          {
             Handles.SphereCap(0, point, Quaternion.identity, brushSize * 2);
          }
@@ -1845,9 +1882,9 @@ namespace JBooth.VertexPainterPro
          {
             Handles.color = new Color(0.8f, 0, 0, 1.0f);
             float r = Mathf.Pow(0.5f, brushFalloff);
-            Handles.DrawWireDisc(point, normal, brushSize * 2 * r);
+            Handles.DrawWireDisc(point, normal, brushSize * r);
             Handles.color = new Color(0.9f, 0, 0, 0.8f);
-            Handles.DrawWireDisc(point, normal, brushSize * 2);
+            Handles.DrawWireDisc(point, normal, brushSize);
          }
          // eat current event if mouse event and we're painting
          if (Event.current.isMouse && painting)
@@ -1874,6 +1911,14 @@ namespace JBooth.VertexPainterPro
                PaintMesh(jobs[i], point);
                Undo.RecordObject(jobs[i].stream, "Vertex Painter Stroke");
 
+            }
+         }
+
+         if (jobs.Length > 0 && showVertexPoints)
+         {
+            for (int i = 0; i < jobs.Length; ++i)
+            {
+               DrawVertexPoints(jobs[i], point);
             }
          }
 

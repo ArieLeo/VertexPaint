@@ -155,8 +155,13 @@ namespace JBooth.VertexPainterPro
             UpdateDisplayMode();
          }
 
+         brushVisualization = (BrushVisualization)EditorGUILayout.EnumPopup("Brush Visualization", brushVisualization);
+
+         showVertexPoints = GUILayout.Toggle(showVertexPoints, "Show Brush Influence");
+
          bool oldHideMeshWireframe = hideMeshWireframe;
-         hideMeshWireframe = GUILayout.Toggle(hideMeshWireframe, "Hide Wireframe (ctrl-W)");
+         hideMeshWireframe = !GUILayout.Toggle(!hideMeshWireframe, "Show Wireframe (ctrl-W)");
+
          if (hideMeshWireframe != oldHideMeshWireframe)
          {
             for (int i = 0; i < jobs.Length; ++i)
@@ -164,6 +169,7 @@ namespace JBooth.VertexPainterPro
                EditorUtility.SetSelectedWireframeHidden(jobs[i].renderer, hideMeshWireframe);
             }
          }
+
          
          bool hasColors = false;
          bool hasUV0 = false;
@@ -276,7 +282,7 @@ namespace JBooth.VertexPainterPro
 
       void DrawBrushSettingsGUI()
       {
-         brushSize      = EditorGUILayout.Slider("Brush Size", brushSize, 0.01f, 10.0f);
+         brushSize      = EditorGUILayout.Slider("Brush Size", brushSize, 0.01f, 30.0f);
          brushFlow      = EditorGUILayout.Slider("Brush Flow", brushFlow, 0.1f, 128.0f);
          brushFalloff   = EditorGUILayout.Slider("Brush Falloff", brushFalloff, 0.1f, 4.0f);
          if (tab == Tab.Paint && flowTarget != FlowTarget.ColorBA && flowTarget != FlowTarget.ColorRG)
