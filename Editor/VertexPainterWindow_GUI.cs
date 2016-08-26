@@ -49,6 +49,7 @@ namespace JBooth.VertexPainterPro
          Deform,
          Flow,
          Bake,
+         Custom
       }
 
       string[] tabNames =
@@ -56,7 +57,8 @@ namespace JBooth.VertexPainterPro
          "Paint",
          "Deform",
          "Flow",
-         "Bake"
+         "Bake",
+         "Custom"
       };
 
 
@@ -128,6 +130,10 @@ namespace JBooth.VertexPainterPro
          {
             DrawBakeGUI();
          }
+         else if (tab == Tab.Custom)
+         {
+            DrawCustomGUI();
+         }
          EditorGUILayout.EndScrollView();
       }
 
@@ -181,17 +187,18 @@ namespace JBooth.VertexPainterPro
          
          for (int i = 0; i < jobs.Length; ++i)
          {
-            if (jobs[i]._stream != null)
+            var stream = jobs[i]._stream;
+            if (stream != null)
             {
                int vertexCount = jobs[i].verts.Length;
                
-               hasColors = (jobs[i].stream.colors != null && jobs[i].stream.colors.Length == vertexCount);
-               hasUV0 = (jobs[i].stream.uv0 != null && jobs[i].stream.uv0.Count == vertexCount);
-               hasUV1 = (jobs[i].stream.uv1 != null && jobs[i].stream.uv1.Count == vertexCount);
-               hasUV2 = (jobs[i].stream.uv2 != null && jobs[i].stream.uv2.Count == vertexCount);
-               hasUV3 = (jobs[i].stream.uv3 != null && jobs[i].stream.uv3.Count == vertexCount);
-               hasPositions = (jobs[i].stream.positions != null && jobs[i].stream.positions.Length == vertexCount);
-               hasNormals = (jobs[i].stream.normals != null && jobs[i].stream.normals.Length == vertexCount);
+               hasColors = (stream.colors != null && stream.colors.Length == vertexCount);
+               hasUV0 = (stream.uv0 != null && stream.uv0.Count == vertexCount);
+               hasUV1 = (stream.uv1 != null && stream.uv1.Count == vertexCount);
+               hasUV2 = (stream.uv2 != null && stream.uv2.Count == vertexCount);
+               hasUV3 = (stream.uv3 != null && stream.uv3.Count == vertexCount);
+               hasPositions = (stream.positions != null && stream.positions.Length == vertexCount);
+               hasNormals = (stream.normals != null && stream.normals.Length == vertexCount);
             }
          }
          
@@ -202,8 +209,9 @@ namespace JBooth.VertexPainterPro
             for (int i = 0; i < jobs.Length; ++i)
             {
                Undo.RecordObject(jobs[i].stream, "Vertex Painter Clear");
-               jobs[i].stream.colors = null;
-               jobs[i].stream.Apply();
+               var stream = jobs[i].stream;
+               stream.colors = null;
+               stream.Apply();
             }
             Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
          }
@@ -212,8 +220,9 @@ namespace JBooth.VertexPainterPro
             for (int i = 0; i < jobs.Length; ++i)
             {
                Undo.RecordObject(jobs[i].stream, "Vertex Painter Clear");
-               jobs[i].stream.uv0 = null;
-               jobs[i].stream.Apply();
+               var stream = jobs[i].stream;
+               stream.uv0 = null;
+               stream.Apply();
             }
             Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
          }
@@ -222,8 +231,9 @@ namespace JBooth.VertexPainterPro
             for (int i = 0; i < jobs.Length; ++i)
             {
                Undo.RecordObject(jobs[i].stream, "Vertex Painter Clear");
-               jobs[i].stream.uv1 = null;
-               jobs[i].stream.Apply();
+               var stream = jobs[i].stream;
+               stream.uv1 = null;
+               stream.Apply();
             }
             Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
          }
@@ -232,8 +242,9 @@ namespace JBooth.VertexPainterPro
             for (int i = 0; i < jobs.Length; ++i)
             {
                Undo.RecordObject(jobs[i].stream, "Vertex Painter Clear");
-               jobs[i].stream.uv2 = null;
-               jobs[i].stream.Apply();
+               var stream = jobs[i].stream;
+               stream.uv2 = null;
+               stream.Apply();
             }
             Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
          }
@@ -242,8 +253,9 @@ namespace JBooth.VertexPainterPro
             for (int i = 0; i < jobs.Length; ++i)
             {
                Undo.RecordObject(jobs[i].stream, "Vertex Painter Clear");
-               jobs[i].stream.uv3 = null;
-               jobs[i].stream.Apply();
+               var stream = jobs[i].stream;
+               stream.uv3 = null;
+               stream.Apply();
             }
             Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
          }
@@ -295,6 +307,35 @@ namespace JBooth.VertexPainterPro
 
       }
 
+
+      void DrawCustomGUI()
+      {
+
+         GUILayout.Box("Brush Settings", new GUILayoutOption[]{GUILayout.ExpandWidth(true), GUILayout.Height(20)});
+         customBrush = EditorGUILayout.ObjectField("Brush", customBrush, typeof(VertexPainterCustomBrush), false) as VertexPainterCustomBrush;
+
+         DrawBrushSettingsGUI();
+
+         if (customBrush != null)
+         {
+            customBrush.DrawGUI();
+         }
+
+         EditorGUILayout.BeginHorizontal();
+         if (GUILayout.Button("Fill"))
+         {
+            for (int i = 0; i < jobs.Length; ++i)
+            {
+               Undo.RecordObject(jobs[i].stream, "Vertex Painter Fill");
+               FillMesh(jobs[i]);
+            }
+            Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
+         }
+
+         EditorGUILayout.EndHorizontal();
+
+      }
+
       void DrawPaintGUI()
       {
 
@@ -305,42 +346,47 @@ namespace JBooth.VertexPainterPro
          {
             UpdateDisplayMode();
          }
-         if (brushMode == BrushTarget.Color)
+         if (brushMode == BrushTarget.Color || brushMode == BrushTarget.UV0_AsColor || brushMode == BrushTarget.UV1_AsColor
+            || brushMode == BrushTarget.UV2_AsColor || brushMode == BrushTarget.UV3_AsColor)
          {
-            brushColor = EditorGUILayout.ColorField("Brush Color", brushColor);
+            brushColorMode = (BrushColorMode)EditorGUILayout.EnumPopup("Blend Mode", (System.Enum)brushColorMode);
 
-            if (GUILayout.Button("Reset Palette", EditorStyles.miniButton, GUILayout.Width(80), GUILayout.Height(16))) 
+            if (brushColorMode == BrushColorMode.Overlay || brushColorMode == BrushColorMode.Normal)
             {
-               if (swatches != null)
-               {
-                  DestroyImmediate(swatches);
-               }
-               swatches = ColorSwatches.CreateInstance<ColorSwatches>();
-               EditorPrefs.SetString(sSwatchKey, JsonUtility.ToJson(swatches,false));
-            }
+               brushColor = EditorGUILayout.ColorField("Brush Color", brushColor);
 
-            GUILayout.BeginHorizontal();
-
-            for (int i = 0; i < swatches.colors.Length; ++i) 
-            {
-               if (GUILayout.Button("", EditorStyles.textField, GUILayout.Width(16), GUILayout.Height(16))) 
+               if (GUILayout.Button("Reset Palette", EditorStyles.miniButton, GUILayout.Width(80), GUILayout.Height(16)))
                {
-                  brushColor = swatches.colors[i];
-               }
-               EditorGUI.DrawRect(new Rect(GUILayoutUtility.GetLastRect().x + 1, GUILayoutUtility.GetLastRect().y + 1, 14, 14), swatches.colors[i]);
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            for (int i = 0; i < swatches.colors.Length; i++) 
-            {
-               if (GUILayout.Button("+", EditorStyles.miniButton, GUILayout.Width(16), GUILayout.Height(12))) 
-               {
-                  swatches.colors[i] = brushColor;
+                  if (swatches != null)
+                  {
+                     DestroyImmediate(swatches);
+                  }
+                  swatches = ColorSwatches.CreateInstance<ColorSwatches>();
                   EditorPrefs.SetString(sSwatchKey, JsonUtility.ToJson(swatches, false));
                }
-            }
-            GUILayout.EndHorizontal();
+            
+               GUILayout.BeginHorizontal();
 
+               for (int i = 0; i < swatches.colors.Length; ++i)
+               {
+                  if (GUILayout.Button("", EditorStyles.textField, GUILayout.Width(16), GUILayout.Height(16)))
+                  {
+                     brushColor = swatches.colors[i];
+                  }
+                  EditorGUI.DrawRect(new Rect(GUILayoutUtility.GetLastRect().x + 1, GUILayoutUtility.GetLastRect().y + 1, 14, 14), swatches.colors[i]);
+               }
+               GUILayout.EndHorizontal();
+               GUILayout.BeginHorizontal();
+               for (int i = 0; i < swatches.colors.Length; i++)
+               {
+                  if (GUILayout.Button("+", EditorStyles.miniButton, GUILayout.Width(16), GUILayout.Height(12)))
+                  {
+                     swatches.colors[i] = brushColor;
+                     EditorPrefs.SetString(sSwatchKey, JsonUtility.ToJson(swatches, false));
+                  }
+               }
+               GUILayout.EndHorizontal();
+            }
          }
          else if (brushMode == BrushTarget.ValueR || brushMode == BrushTarget.ValueG || brushMode == BrushTarget.ValueB || brushMode == BrushTarget.ValueA)
          {
@@ -463,7 +509,7 @@ namespace JBooth.VertexPainterPro
          brushMode = (BrushTarget)EditorGUILayout.EnumPopup("Target Channel", brushMode);
          aoSamples = EditorGUILayout.IntSlider("Samples", aoSamples, 64, 1024);
          EditorGUILayout.BeginHorizontal();
-         aoRange = EditorGUILayout.Vector2Field("Range", aoRange);
+         aoRange = EditorGUILayout.Vector2Field("Range (Min, Max)", aoRange);
          aoRange.x = Mathf.Max(aoRange.x, 0.0001f);
          EditorGUILayout.EndHorizontal();
          aoIntensity = EditorGUILayout.Slider("Intensity", aoIntensity, 0.25f, 4.0f);
@@ -490,7 +536,11 @@ namespace JBooth.VertexPainterPro
 
          bakeSourceUV = (BakeSourceUV)EditorGUILayout.EnumPopup("Source UVs", bakeSourceUV);
          bakeChannel = (BakeChannel)EditorGUILayout.EnumPopup("Bake To", bakeChannel);
-
+         if (bakeSourceUV == BakeSourceUV.WorldSpaceXY || bakeSourceUV == BakeSourceUV.WorldSpaceXZ || bakeSourceUV == BakeSourceUV.WorldSpaceYZ)
+         {
+            worldSpaceLower = EditorGUILayout.Vector2Field("Lower world position", worldSpaceLower);
+            worldSpaceUpper = EditorGUILayout.Vector2Field("Upper world position", worldSpaceUpper);
+         }
          EditorGUILayout.BeginHorizontal();
          EditorGUILayout.Space();
          if (GUILayout.Button("Bake"))
@@ -510,16 +560,21 @@ namespace JBooth.VertexPainterPro
          GUILayout.Space(10);
          GUILayout.Box("Bake Pivot", new GUILayoutOption[]{GUILayout.ExpandWidth(true), GUILayout.Height(20)});
          pivotTarget = (PivotTarget)EditorGUILayout.EnumPopup("Store in", pivotTarget);
+         bakePivotUseLocal = EditorGUILayout.Toggle("Use Local Space", bakePivotUseLocal);
 
          EditorGUILayout.BeginHorizontal();
          EditorGUILayout.Space();
-         if (GUILayout.Button("Bake"))
+         if (GUILayout.Button("Bake Pivot"))
          {
             BakePivot();
          }
+         if (GUILayout.Button("Bake Rotation"))
+         {
+            BakeRotation();
+         }
+
          EditorGUILayout.Space();
          EditorGUILayout.EndHorizontal();
-
          GUILayout.Space(10);
          GUILayout.Box("Mesh Combiner", new GUILayoutOption[]{GUILayout.ExpandWidth(true), GUILayout.Height(20)});
          EditorGUILayout.BeginHorizontal();
@@ -584,7 +639,8 @@ namespace JBooth.VertexPainterPro
       // copy a mesh, and bake it's vertex stream into the mesh data. 
       Mesh BakeDownMesh(Mesh mesh, VertexInstanceStream stream)
       {
-         var copy = new Mesh();
+         var copy = Instantiate(mesh);
+         /*
          foreach(var property in typeof(Mesh).GetProperties())
          {
             if(property.GetSetMethod() != null && property.GetGetMethod() != null)
@@ -593,12 +649,13 @@ namespace JBooth.VertexPainterPro
             }
          }
          copy.hideFlags = 0;
+*/
 
          copy.colors = stream.colors;
-         if (stream.uv0 != null) { copy.SetUVs(0, stream.uv0); }
-         if (stream.uv1 != null) { copy.SetUVs(1, stream.uv1); }
-         if (stream.uv2 != null) { copy.SetUVs(2, stream.uv2); }
-         if (stream.uv3 != null) { copy.SetUVs(3, stream.uv3); }
+         if (stream.uv0 != null && stream.uv0.Count > 0) { copy.SetUVs(0, stream.uv0); }
+         if (stream.uv1 != null && stream.uv1.Count > 0) { copy.SetUVs(1, stream.uv1); }
+         if (stream.uv2 != null && stream.uv2.Count > 0) { copy.SetUVs(2, stream.uv2); }
+         if (stream.uv3 != null && stream.uv3.Count > 0) { copy.SetUVs(3, stream.uv3); }
 
          if (stream.positions != null && stream.positions.Length == copy.vertexCount)
          {
