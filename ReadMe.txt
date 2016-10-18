@@ -18,6 +18,14 @@ https://pledgie.com/campaigns/31113
 
 Warning: This package can take a long time to import into Unity due to a large number of shader variants; if you do not need the shaders and only want the vertex painter, I suggest removing them from the project before importing. They are fantastic shaders though..
 
+A note on the license:
+
+I have been asked by several people if I mind them reselling parts or all of this
+package in the Unity Asset Store. I have amended the license to prohibit this
+use case. I have given this package away for free and put considerable work into
+it, if you find that your product is enhanced by it’s use, then please point your
+users towards my repository. Thanks you.
+
 Additional Vertex Streams
 
 	This package allows you to paint information onto the vertices of a mesh in the Unity editor as well as modify any attribute of the mesh. It uses the new 'additionalVertexStream' system of Unity5, which allows you to override per-instance data on meshes without paying the cost of duplicating a full mesh. This makes it ideal for painting vertex information across many instances of a mesh. The tool also allows you to easily bake that information back to mesh assets if you'd prefer to make a modified mesh and store that in disk, instead of with the instance in the scene. 
@@ -71,4 +79,8 @@ Shaders
 
 	As you can see, the complexity of the shader can grow very fast as features are enabled. 
 
-	Because these features are compiled out when not in use, what the shader compiler is actually doing is compiling a shader for each option and picking the correct shader. This means that importing the shaders actually produces many thousands of shader variants, which makes import time very, very long. Before shipping, you may want to use Unity’s ShaderVariantCollection feature to remove the shaders your game does not use; this will make your app much smaller, as it will remove unused variants. 
+	Because these features are compiled out when not in use, what the shader compiler is actually doing is compiling a shader for each option and picking the correct shader. This means that importing the shaders actually produces many thousands of shader variants, which makes import time very, very long. Before shipping, you may want to use Unity’s ShaderVariantCollection feature to remove the shaders your game does not use; this will make your app much smaller, as it will remove unused variants.
+
+	Pivot Example:
+
+    The pivot example contains a small tutorial that will show you how to bake the pivot of many objects into the vertices, then combine the object into one object and still rotate them all around their own pivots in the shader. This can be very useful for a number of effects, such as rotating asteroids, objects which shatter into pieces, etc, and is often many times cheaper than animating these effects any other way. 
